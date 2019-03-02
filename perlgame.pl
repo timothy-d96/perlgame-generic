@@ -24,8 +24,8 @@ my $app = SDLx::App->new(
 SDL::Mouse::show_cursor(SDL_DISABLE);
 char();
 maps();
-$currentroom = '100';
-$previousroom = '100';
+$currentroom = '10102';
+$previousroom = '0';
 $drawpreviousroom = 0;
 $roomsd = 0;
 $roomsvel = ($app->w)/16;
@@ -94,18 +94,18 @@ sub on_move {
         }
     } else {
         for ( my $i = 0; $i < abs( $roomsvel * $dt ); $i++ ) {
-            if ( $roomsd eq 'n' and $pryoffset < $app->h ) {
+            if ( $roomsd eq 'n' and $cryoffset < 0 ) {
                 $char[0]{y} = 16*$char[0]{h};
-                $pryoffset++;
-            } elsif ( $roomsd eq 's' and $pryoffset > 0 ) {
+                $pryoffset++; $cryoffset++;
+            } elsif ( $roomsd eq 's' and $cryoffset > 0 ) {
                 $char[0]{y} = $char[0]{h};
-                $pryoffset--;
-            } elsif ( $roomsd eq 'w' and $prxoffset < $app->w ) {
+                $pryoffset--; $cryoffset--;
+            } elsif ( $roomsd eq 'w' and $crxoffset < 0 ) {
                 $char[0]{x} = 30*$char[0]{w};
-                $prxoffset += 2;
-            } elsif ( $roomsd eq 'e' and $prxoffset > 0 ) {
+                $prxoffset += 2; $crxoffset += 2;
+            } elsif ( $roomsd eq 'e' and $crxoffset > 0 ) {
                 $char[0]{x} = $char[0]{w};
-                $prxoffset -= 2;
+                $prxoffset -= 2; $crxoffset -= 2;
             } else {
                 $moveplayer = 1;
                 $drawpreviousroom = 0;
@@ -121,30 +121,25 @@ sub newroom {
     $previousroom = $currentroom;
     $moveplayer = 0;
     $drawpreviousroom = 1;
+    $prxoffset = 0; $pryoffset = 0; $crxoffset = 0; $cryoffset = 0;
     if ($_[0] eq 'n') {
         $currentroom--;
-        $prxoffset = 0;
-        $pryoffset = 0;
+        $cryoffset = -$app->h;
         $roomsd = 'n';
     }
-    #WRONG
     if ($_[0] eq 's') {
         $currentroom++;
-        $prxoffset = 0;
-        $pryoffset = $app->h;
+        $cryoffset = $app->h;
         $roomsd = 's';
     }
     if ($_[0] eq 'w') {
         $currentroom -= 100;
-        $prxoffset = 0;
-        $pryoffset = 0;
+        $crxoffset = -$app->w;
         $roomsd = 'w';
     }
-    #WRONG
     if ($_[0] eq 'e') {
         $currentroom += 100;
-        $prxoffset = $app->w;
-        $pryoffset = 0;
+        $crxoffset = $app->w;
         $roomsd = 'e';
     }
 }
@@ -163,7 +158,7 @@ sub on_show {
                 if ( substr($maps{$previousroom}[$j], $i, 1) eq 'E' ) {
                     SDL::Video::fill_rect(
                         $app,
-                        SDL::Rect->new( ($i*($app->w/32))+$prxoffset, ($j*($app->h/18))+$pryoffset, (($app->w)/32)+$prxoffset, (($app->h)/18)+$pryoffset ),
+                        SDL::Rect->new( ($i*($app->w/32))+$prxoffset, ($j*($app->h/18))+$pryoffset, ( ($app->w)/32 ), ( ($app->h)/18) ),
                         SDL::Video::map_RGB( $app->format, 100, 100, 100)
                     );
                 }
@@ -176,18 +171,20 @@ sub on_show {
             if ( substr($maps{$currentroom}[$j], $i, 1) eq 'E' ) {
                 SDL::Video::fill_rect(
                     $app,
-                    SDL::Rect->new( ($i*($app->w/32)), ($j*($app->h/18)), (($app->w)/32), (($app->h)/18) ),
+                    SDL::Rect->new( ($i*($app->w/32))+$crxoffset, ($j*($app->h/18))+$cryoffset, ( ($app->w)/32 ), ( ($app->h)/18) ),
                     SDL::Video::map_RGB( $app->format, 255, 255, 255)
                 );
             }
         }
     }
     #draw characters
-    SDL::Video::fill_rect(
-        $app,
-        SDL::Rect->new( $char[0]{x}, $char[0]{y}, $char[0]{w}, $char[0]{h} ),
-        SDL::Video::map_RGB( $app->format, 0, 0, 255)
-    );
+    if ( $moveplayer ) {
+        SDL::Video::fill_rect(
+            $app,
+            SDL::Rect->new( $char[0]{x}, $char[0]{y}, $char[0]{w}, $char[0]{h} ),
+            SDL::Video::map_RGB( $app->format, 0, 0, 255)
+        );
+    }
     $app->sync;
 }
 
@@ -212,8 +209,29 @@ sub char {
 #Maps (Hash of Arrays)
 sub maps {
     %maps = (
-        #ROOM 00-01-00
-        100 => [
+        #ROOM 00-00-00
+        0 => [
+            "EEEEEEnnnnEEEEEEEEEEEEnnnnEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w                              e",
+            "w                              e",
+            "w                              e",
+            "w                              e",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEssssEEEEEE",
+        ],
+        #ROOM 01-00-00
+        10000 => [
             "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
             "E              EE              E",
             "E              EE              E",
@@ -225,6 +243,111 @@ sub maps {
             "E                              e",
             "E                              e",
             "E                              e",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+        ],
+        #ROOM 01-01-00
+        10100 => [
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w              EE              e",
+            "w              EE              e",
+            "w              EE              e",
+            "w              EE              e",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEEEEEEEEEEE",
+        ],
+        #ROOM 01-02-00
+        10200 => [
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEEEEEEEEEEE",
+        ],
+        #ROOM 01-00-01
+        10001 => [
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E                              e",
+            "E                              e",
+            "E                              e",
+            "E                              e",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEEEEEEEEEEE",
+        ],
+        #ROOM 01-01-01
+        10101 => [
+            "EEEEEEnnnnEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w              EE              e",
+            "w              EE              e",
+            "w              EE              e",
+            "w              EE              e",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEssssEEEEEE",
+        ],
+        #ROOM 01-02-01
+        10201 => [
+            "EEEEEEnnnnEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
@@ -233,40 +356,19 @@ sub maps {
             "E              EE              E",
             "EEEEEEEEEEEEEEEEEEEEEEssssEEEEEE",
         ],
-        #ROOM 00-02-00
-        200 => [
-            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+        #ROOM 01-00-02
+        10002 => [
+            "EEEEEEnnnnEEEEEEEEEEEEEEEEEEEEEE",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
-            "w                              E",
-            "w                              E",
-            "w                              E",
-            "w                              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-        ],
-        #ROOM 00-00-01
-        1 => [
-            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E              EE              E",
-            "E                              e",
-            "E                              e",
-            "E                              e",
-            "E                              e",
+            "E              EE              e",
+            "E              EE              e",
+            "E              EE              e",
+            "E              EE              e",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
@@ -275,8 +377,29 @@ sub maps {
             "E              EE              E",
             "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
         ],
-        #ROOM 00-01-01
-        101 => [
+        #ROOM 01-01-02
+        10102 => [
+            "EEEEEEnnnnEEEEEEEEEEEEnnnnEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
+            "w                              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+        ],
+        #ROOM 01-02-02
+        10202 => [
             "EEEEEEEEEEEEEEEEEEEEEEnnnnEEEEEE",
             "E              EE              E",
             "E              EE              E",
@@ -284,17 +407,17 @@ sub maps {
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
-            "w                              E",
-            "w                              E",
-            "w                              E",
-            "w                              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
             "E              EE              E",
-            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "E              EE              E",
+            "EEEEEEssssEEEEEEEEEEEEEEEEEEEEEE",
         ],
     );
 }
